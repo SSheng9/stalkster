@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Message from './MessageItem';
 import axios from 'axios';
 
+import { Auth, API } from "aws-amplify";
+
 
 const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
   // Replace the array with actual message data
@@ -11,11 +13,20 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
   useEffect(() => {
     onSetProcessing(true);
     // fetch the messages
-    const apiURL = import.meta.env.VITE_API_URL
-    axios.get(apiURL + `/chats/${chat.id}/messages`).then((res)=>{
-      console.log(res);
-      setMessages(res.data.messages);
-    })
+    // const apiURL = import.meta.env.VITE_API_URL
+    // axios.get(apiURL + `/chats/${chat.id}/messages`).then((res)=>{
+    //   console.log(res);
+    //   setMessages(res.data.messages);
+
+       API.get("api", `/chats/${chat.id}/messages`).then((res) => {
+        // alert(JSON.stringify(response, null, 2))
+        setMessages(res.messages);
+      })
+      .catch((error) => {
+        // console.log(error)
+        alert(error)
+      })
+
     onSetProcessing(false);
 
   }, [chat])
@@ -26,13 +37,29 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
     onSetProcessing(true);
 
     // Implement sending the message here
-    const apiURL = import.meta.env.VITE_API_URL
+    // const apiURL = import.meta.env.VITE_API_URL
+    
     if (input.trim() != "") {
-    const result = await axios.post(apiURL+`/chats/${chat.id}/messages`, {content:input})
+    try{
+    // const result = await axios.post(apiURL+`/chats/${chat.id}/messages`, {content:input})
+    
+    const result = await API.post("api", `/chats/${chat.id}/messages`,  
+    {
+       body: {content: input} ,
+      headers: {
+        Authorization: `Bearer ${(await Auth.currentSession()).getAccessToken().getJwtToken()}`,
+      },
+    });
+
+
     console.log(result)
-    const newMessage = result.data.message
+    const newMessage = result.message
     setMessages([...messages, newMessage]);  
+    }catch(error){
+      alert(error)
+      console.log(error);
     }
+  }
     setInput('');
     onSetProcessing(false);
 
@@ -41,19 +68,34 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
 
 
 
-
-
   const handleMessageUpdate = async (id, content) => {
     onSetProcessing(true);
 
     // Implement updating the message here
-        const apiURL = import.meta.env.VITE_API_URL
-        await axios.put(apiURL+`/chats/${chat.id}/messages/`+ id, {content})
-    console.log(id, content)
-    const updatedMessages = messages.map((message) =>
-    message.id === id ? { ...message, content: content } : message
-    );
-    setMessages(updatedMessages);
+        // const apiURL = import.meta.env.VITE_API_URL
+        // await axios.put(apiURL+`/chats/${chat.id}/messages/`+ id, {content})
+        try{
+          await API.put("api", `/chats/${chat.id}/messages/`+ id,
+          {
+            body: {content: content},
+            headers: {
+              Authorization: `Bearer ${(await Auth.currentSession())
+                .getAccessToken()
+                .getJwtToken()}`,
+            },
+
+          }
+          );
+          console.log(id, content)
+          const updatedMessages = messages.map((message) =>
+          message.id === id ? { ...message, content: content } : message
+          );
+          setMessages(updatedMessages);
+        }catch(error){
+          alert(error)
+          console.log(error);
+        }
+
     onSetProcessing(false);
 
 
@@ -67,8 +109,19 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
 
     // Implement deleting the message here
 
-    const apiURL = import.meta.env.VITE_API_URL
-    await axios.delete(apiURL+`/chats/${chat.id}/messages/`+ id)
+    // const apiURL = import.meta.env.VITE_API_URL
+    // await axios.delete(apiURL+`/chats/${chat.id}/messages/`+ id)
+
+
+    await API.del("api", `/chats/${chat.id}/messages/` + id,  
+    {
+      headers: {
+        Authorization: `Bearer ${(await Auth.currentSession())
+          .getAccessToken()
+          .getJwtToken()}`,
+      },
+    }
+  );
     
     const updatedMessages = messages.filter((message) => message.id !== id);
     setMessages(updatedMessages);

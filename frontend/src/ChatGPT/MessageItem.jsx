@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { EditIcon, TrashIcon } from './Icons';
 
+import { useAuthenticator } from '@aws-amplify/ui-react';
+
+
 const MessageItem = ({ message, onUpdate, onDelete }) => {
+  
+  const { user } = useAuthenticator((context) => [context.user]);
+
+
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(message.content);
 
@@ -17,7 +24,7 @@ const MessageItem = ({ message, onUpdate, onDelete }) => {
   };
 
   return (
-    <div className={`flex my-2 ${isUser ? 'justify-end' : ''}`}>
+    <div className={`flex my-2 ${isUser ? 'justify-end' : ''} ${user .attributes.sub == message.user_id ? 'justify-end' : ''}`}>
     <div className="p-2 my-1">
       {isEditing ? (
         <div className="flex">
@@ -35,22 +42,33 @@ const MessageItem = ({ message, onUpdate, onDelete }) => {
           </button>
         </div>
       ) : (
+        <>
+        <p className={`text-xs ${user .attributes.sub == message.user_id ? 'text-end font-semibold': 'text-start'}`}>{message.username}</p>
         <div
-        className={`px-4 py-2 rounded ${
+        className={`px-4 py-2 rounded ${ user .attributes.sub == message.user_id ? 'bg-green-500 text-black mr-0	':
           isUser ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700'
         }`}
       >
       
-        <div className="flex items-center">
-          <span className="flex-grow">{content}</span>
-          <button onClick={() => setIsEditing(true)} className="px-1 text-gray-600 hover:text-gray-800">
-            <EditIcon />
-          </button>
-          <button onClick={handleDelete} className="px-1 ml-2 text-gray-600 hover:text-gray-800">
-            <TrashIcon />
-          </button>
+              <div className="flex justify-between items-center gap-5">
+                <div>
+                <span className="flex-grow">{content}</span>
+                </div>
+                {user && user .attributes.sub == message.user_id&&(
+                  <div>
+                <button onClick={() => setIsEditing(true)} className="px-1 text-gray-600 hover:text-gray-800">
+                  <EditIcon />
+                </button>
+                <button onClick={handleDelete} className="px-1 ml-2 text-gray-600 hover:text-gray-800">
+                  <TrashIcon />
+                </button>
+                </div>
+                )}
+              </div>
         </div>
-        </div>
+        <p className={`text-xs ${user.attributes.sub == message.user_id ? 'text-end': 'text-start'}`}>{new Date(message.timestamp).toLocaleString()}</p>
+
+        </>
       )}
     </div>
   </div>

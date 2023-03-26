@@ -1,4 +1,4 @@
-import { getMessages } from "@stalkster/core/src/database"
+import { getMessages } from "@stalkster/core/database"
 
 export async function main(event) {
     

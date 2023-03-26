@@ -3,9 +3,17 @@ import { EditIcon, TrashIcon } from './Icons'; // Import the icons from a separa
 
 import { twMerge } from 'tailwind-merge';
 
+import { useAuthenticator } from '@aws-amplify/ui-react';
+
 const ChatItem = ({ chat, selected, onSelect, onUpdate, onDelete }) => {
+  const { user } = useAuthenticator((context) => [context.user]);
+  console.log("user", user)
+  console.log("chatId", chat)
+
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(chat.name);
+
+  // console.log({chat})
 
   const handleUpdate = () => {
     onUpdate(chat.id, name);
@@ -46,14 +54,24 @@ const ChatItem = ({ chat, selected, onSelect, onUpdate, onDelete }) => {
           </button>
         </div>
       ) : (
-        <div className={twMerge("flex items-center cursor-pointer hover:bg-gray-200", selected ? "bg-gray-200" : "")}>
+        <div className={twMerge("flex justify-between items-center cursor-pointer hover:bg-gray-200", selected ? "bg-gray-200" : "")}>
+          <div className="flex flex-col">
           <h3 className="flex-grow font-semibold">{chat.name}</h3>
+          <p className="text-xs">created by <strong>{chat.username}</strong></p>
+          </div>
+
+          {user && user .attributes.sub == chat.user_id&&(
+          // {user &&(
+
+            <div>
           <button onClick={toggleEditing} className="px-1 text-gray-600 hover:text-gray-800">
             <EditIcon />
           </button>
           <button onClick={handleDelete} className="px-1 ml-2 text-gray-600 hover:text-gray-800">
             <TrashIcon />
           </button>
+          </div>
+          )}
         </div>
       )}
     </div>

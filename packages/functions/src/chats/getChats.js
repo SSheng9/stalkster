@@ -1,4 +1,4 @@
-import { getChats } from "@stalkster/core/src/database"
+import { getChats } from "@stalkster/core/database"
 
 export async function main(event) {
     const chats = await getChats()
