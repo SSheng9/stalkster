@@ -5,9 +5,14 @@ import axios from 'axios';
 
 import { Auth, API } from "aws-amplify";
 
+import { useNavigate  } from "react-router-dom";
+
+
 const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => {
   const [chats, setChats] = useState();
   console.log("chats", chats)
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     // fetch the chats
@@ -100,6 +105,7 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
 
   const createChat = async (name) => {
     onSetProcessing(true);
+    // const history = useHistory();
 
     // const apiURL = import.meta.env.VITE_API_URL
     // const result = await axios.post(apiURL+"/chats", {name:name})
@@ -114,12 +120,16 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
     console.log(result)
     const newChat = result.chat
     setChats([...chats, newChat]);
-    console.log("createchat",chats)
+    console.log("createchat",chats);
+    onSetProcessing(false);
+
   } catch(error){
     alert(error)
     console.log(error);
-  }
+    navigate("/login")
     onSetProcessing(false);
+
+  }
 
   };
 
