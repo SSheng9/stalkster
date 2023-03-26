@@ -22,17 +22,17 @@ export async function getChats() {
   return res.rows
 }
 
-export async function createChat(name) {
+export async function createChat(name, userId, username) {
   const res = await getPool().query(`
-  INSERT INTO chats (name)
-  VALUES ($1)
+  INSERT INTO chats (name, user_id, username)
+  VALUES ($1, $2, $3)
   RETURNING *
-  `, [name])
+  `, [name, userId, username])
 
   return res.rows[0]
 }
 
-export async function deleteChat(id) {
+export async function deleteChat(id, userId) {
   // const res = await getPool().query(`
   // DELETE FROM chats
   // WHERE id = $1
@@ -45,29 +45,45 @@ export async function deleteChat(id) {
   // RETURNING *
   // `, [id])
 
+
+//   const res = await getPool().query(`
+//   DELETE FROM chats
+//   WHERE id = $1
+//   AND user_id = $2
+//   RETURNING *
+// `, [id, userId])
+
+//   return res.rows[0]
+
+
+
   const res = await getPool().query(`
   WITH deleted_chat AS (
     DELETE FROM chats
     WHERE id = $1
+    AND user_id = $2
     RETURNING *
   )
   DELETE FROM messages
   WHERE chat_id = (SELECT id FROM deleted_chat)
+  AND user_id = $2
   RETURNING *
-`, [id])
+`, [id, userId])
 
   
   return res.rows[0]
 }
 
 
-export async function updateChat(id,name) {
+
+export async function updateChat(id, name, userId) {
   const res = await getPool().query(`
   UPDATE chats
   SET name = $2
   WHERE id = $1
+  AND user_id = $3
   RETURNING *
-  `, ([id, name]))
+  `, ([id, name, userId]))
   
   return res.rows[0]
 }
@@ -98,39 +114,41 @@ export async function getMessages(id) {
 
 
 
-export async function createMessage(id, content) {
+export async function createMessage(id, content, userId, username) {
   const res = await getPool().query(
     `
-    INSERT INTO messages (chat_id, content)
-    VALUES ($1, $2)
+    INSERT INTO messages (chat_id, content, user_id, username)
+    VALUES ($1, $2, $3, $4)
     RETURNING *
     `,
-    [id, content]
+    [id, content, userId, username]
 );
   return res.rows[0]
 }
 
 
 
-export async function deleteMessage(id) {
+export async function deleteMessage(id, userId) {
   const res = await getPool().query(`
   DELETE FROM messages
   WHERE id = $1
+  AND user_id = $2
   RETURNING *
-  `, [id])
+  `, [id, userId])
   
   return res.rows[0]
 }
 
 
 
-export async function updateMessage(id, content) {
+export async function updateMessage(id, content, userId) {
   const res = await getPool().query(`
   UPDATE messages
   SET content = $2
   WHERE id = $1
+  AND user_id = $3
   RETURNING *
-  `, ([id, content]))
+  `, ([id, content,userId]))
   
   return res.rows[0]
 }
