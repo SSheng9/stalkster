@@ -119,7 +119,7 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
     });
     console.log(result)
     const newChat = result.chat
-    setChats([...chats, newChat]);
+    setChats([ newChat, ...chats ]);
     console.log("createchat",chats);
     onSetProcessing(false);
 
@@ -136,11 +136,11 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
   return (
     <div className="overflow-y-auto">
        {/* {onProcessing ? "Loading" : ""} */}
-       
+       <NewChatButton onCreate={createChat} processing={onProcessing} />
+
        { chats ? chats.map((chat) => (
         <ChatItem selected={chat.id == selectedChat?.id} key={chat.id} chat={chat} onSelect={onSelect} onUpdate={updateChat} onDelete={deleteChat}/>
       )) :  "Loading"}
-      <NewChatButton onCreate={createChat} processing={onProcessing} />
     </div>
   );
 };
