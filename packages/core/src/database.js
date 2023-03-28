@@ -107,7 +107,7 @@ export async function getMessages(id) {
   const res = await getPool().query(`
   SELECT * FROM messages
   WHERE chat_id = $1
-  ORDER BY timestamp DESC
+  ORDER BY timestamp ASC
   `,[id])
   return res.rows
 }
