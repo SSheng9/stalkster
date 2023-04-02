@@ -1,12 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EditIcon, TrashIcon } from './Icons';
-
+import { Auth } from "aws-amplify";
 import { useAuthenticator } from '@aws-amplify/ui-react';
 
 
 const MessageItem = ({ message, onUpdate, onDelete }) => {
   
+  // const { user } = useAuthenticator((context) => [context.user]);
+
+  // const credentials = Auth.currentCredentials();
+  // const id = credentials.identityId
+  // console.log("current ID ", id)
+
+
   const { user } = useAuthenticator((context) => [context.user]);
+
+  const [id, setIdentityId] = useState(null);
+
+  useEffect(() => {
+    const getCurrentIdentityId = async () => {
+      try {
+        const credentials = await Auth.currentCredentials();
+        const id = credentials.identityId;
+        setIdentityId(id);
+      } catch (err) {
+        console.log("Error getting current credentials: ", err);
+      }
+    };
+    getCurrentIdentityId();
+  }, []);
 
 
   const [isEditing, setIsEditing] = useState(false);
@@ -24,7 +46,7 @@ const MessageItem = ({ message, onUpdate, onDelete }) => {
   };
 
   return (
-    <div className={`flex my-2 ${isUser ? 'justify-end' : ''} ${user .attributes.sub == message.user_id ? 'justify-end' : ''}`}>
+    <div className={`flex my-2 ${isUser ? 'justify-end' : ''} ${id == message.user_id ? 'justify-end' : ''}`}>
     <div className="p-2 my-1">
       {isEditing ? (
         <div className="flex">
@@ -43,30 +65,39 @@ const MessageItem = ({ message, onUpdate, onDelete }) => {
         </div>
       ) : (
         <>
-        <p className={`text-xs ${user .attributes.sub == message.user_id ? 'text-end font-semibold': 'text-start'}`}>{message.username}</p>
+        <p className={`text-xs ${id == message.user_id ? 'text-end font-semibold': 'text-start'}`}>{message.username}</p>
         <div
-        className={`px-4 py-2 rounded ${ user .attributes.sub == message.user_id ? 'bg-green-500 text-black mr-0	':
+        className={`px-4 py-2 rounded ${ id == message.user_id ? 'bg-green-500 text-black mr-0	':
           isUser ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-700'
         }`}
       >
       
               <div className="flex justify-between items-center gap-5">
                 <div>
-                <span className="flex-grow">{content}</span>
+                {message.content_type === 'text' ?
+
+                (<span className="flex-grow">{content}</span>
+                ) : (
+                <img src={content} alt="img" className="flex-grow" />
+                )}
                 </div>
-                {user && user .attributes.sub == message.user_id&&(
+           
+                { id == message.user_id && (
                   <div>
+                {message.content_type === "text" &&
                 <button onClick={() => setIsEditing(true)} className="px-1 text-gray-600 hover:text-gray-800">
                   <EditIcon />
                 </button>
+                }
                 <button onClick={handleDelete} className="px-1 ml-2 text-gray-600 hover:text-gray-800">
                   <TrashIcon />
                 </button>
                 </div>
-                )}
+                )
+                }
               </div>
         </div>
-        <p className={`text-xs ${user.attributes.sub == message.user_id ? 'text-end': 'text-start'}`}>{new Date(message.timestamp).toLocaleString()}</p>
+        <p className={`text-xs ${id == message.user_id ? 'text-end': 'text-start'}`}>{new Date(message.timestamp).toLocaleString()}</p>
 
         </>
       )}

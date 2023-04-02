@@ -5,7 +5,8 @@ import { twMerge } from 'tailwind-merge';
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
 
-const ChatItem = ({ chat, selected, onSelect, onUpdate, onDelete }) => {
+
+const ChatItem = ({ chat, selected, onSelect, onUpdate, onDelete,user_id }) => {
   const { user } = useAuthenticator((context) => [context.user]);
   console.log("user", user)
   console.log("chatId", chat)
@@ -60,7 +61,7 @@ const ChatItem = ({ chat, selected, onSelect, onUpdate, onDelete }) => {
           <p className="text-xs">created by <strong>{chat.username}</strong></p>
           </div>
 
-          {user && user .attributes.sub == chat.user_id&&(
+          {user && user_id == chat.user_id&&(
           // {user &&(
 
             <div>
