@@ -103,25 +103,25 @@ export async function updateChat(id, name, userId) {
 // }
 
 
-export async function getMessages(id) {
+export async function getMessages(chatId) {
   const res = await getPool().query(`
   SELECT * FROM messages
   WHERE chat_id = $1
   ORDER BY timestamp ASC
-  `,[id])
+  `,[chatId])
   return res.rows
 }
 
 
 
-export async function createMessage(id, content, userId, username) {
+export async function createMessage(id, content, userId, username, content_type = "text") {
   const res = await getPool().query(
     `
-    INSERT INTO messages (chat_id, content, user_id, username)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO messages (chat_id, content, user_id, username, content_type)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *
     `,
-    [id, content, userId, username]
+    [id, content, userId, username, content_type]
 );
   return res.rows[0]
 }

@@ -8,15 +8,33 @@ import { Auth, API } from "aws-amplify";
 import { useNavigate  } from "react-router-dom";
 
 
+import { Storage } from 'aws-amplify';
+
+
 const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => {
   const [chats, setChats] = useState();
   console.log("chats", chats)
   const navigate = useNavigate();
 
+  const [user_id, setIdentityId] = useState(null);
+
+
+    const getCurrentIdentityId = async () => {
+      try {
+        const credentials = await Auth.currentCredentials();
+        const id = credentials.identityId;
+        setIdentityId(id);
+      } catch (err) {
+        console.log("Error getting current credentials: ", err);
+      }
+    };
+
 
   useEffect(() => {
     // fetch the chats
-    getChat()
+    getChat();
+    getCurrentIdentityId();
+
   }, []);
 
   const getChat = async () => {
@@ -56,11 +74,11 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
       await API.put("api", "/chats/" + id,    
       {
          body: {name: newName} ,
-          headers: {
-          Authorization: `Bearer ${(await Auth.currentSession())
-            .getAccessToken()
-            .getJwtToken()}`,
-        },
+        //   headers: {
+        //   Authorization: `Bearer ${(await Auth.currentSession())
+        //     .getAccessToken()
+        //     .getJwtToken()}`,
+        // },
       }
       );
     const updatedChats = chats.map((chat) =>
@@ -84,13 +102,17 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
     // const apiURL = import.meta.env.VITE_API_URL
     // await axios.delete(apiURL+"/chats/"+ id)
 
+    const response = await API.get("api", "/chats/" + id + "/messages");
+    const messages =response.messages;
+    await Storage.remove(messages.find(message => message.chat_id === id)?.content);
+
    await API.del("api", "/chats/" + id,  
       {
-        headers: {
-          Authorization: `Bearer ${(await Auth.currentSession())
-            .getAccessToken()
-            .getJwtToken()}`,
-        },
+        // headers: {
+        //   Authorization: `Bearer ${(await Auth.currentSession())
+        //     .getAccessToken()
+        //     .getJwtToken()}`,
+        // },
       }
     );
 
@@ -113,9 +135,11 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
     const result = await API.post("api", "/chats",  
     {
        body: {name: name} ,
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession()).getAccessToken().getJwtToken()}`,
-      },
+      // headers: {
+      //   Authorization: `Bearer ${(await Auth.currentSession())
+      //     .getAccessToken()
+      //     .getJwtToken()}`,
+      // },
     });
     console.log(result)
     const newChat = result.chat
@@ -139,7 +163,7 @@ const ChatList = ({ onSelect, selectedChat, onProcessing, onSetProcessing }) => 
        <NewChatButton onCreate={createChat} processing={onProcessing} />
 
        { chats ? chats.map((chat) => (
-        <ChatItem selected={chat.id == selectedChat?.id} key={chat.id} chat={chat} onSelect={onSelect} onUpdate={updateChat} onDelete={deleteChat}/>
+        <ChatItem selected={chat.id == selectedChat?.id} key={chat.id} chat={chat} onSelect={onSelect} onUpdate={updateChat} onDelete={deleteChat} user_id = {user_id}/>
       )) :  "Loading"}
     </div>
   );

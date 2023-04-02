@@ -3,12 +3,37 @@ import Message from './MessageItem';
 import axios from 'axios';
 
 import { Auth, API } from "aws-amplify";
+import { Storage } from 'aws-amplify';
 
 
 const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
   // Replace the array with actual message data
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+
+  const [file, setFile] = useState(null);
+
+
+  async function getMessages() {
+    const response = await API.get("api", "/chats/" + chat.id + "/messages");
+    const messages =response.messages;
+    for (const message of messages) {
+      console.log("message before", message )
+      if (message.content_type === "image") {
+        message.key =  message.content
+      message.content = await Storage.get(message.content, {
+        identityId: message.user_id
+      })
+    }
+    console.log("message after", message )
+
+  }
+  console.log(messages);
+
+    setMessages(messages);
+  }
+
+
 
   useEffect(() => {
     onSetProcessing(true);
@@ -18,48 +43,85 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
     //   console.log(res);
     //   setMessages(res.data.messages);
 
-       API.get("api", `/chats/${chat.id}/messages`).then((res) => {
-        // alert(JSON.stringify(response, null, 2))
-        setMessages(res.messages);
-      })
-      .catch((error) => {
-        // console.log(error)
-        alert(error)
-      })
+    getMessages();
+      //  API.get("api", `/chats/${chat.id}/messages`).then((res) => {
+      //   // alert(JSON.stringify(response, null, 2))
+      //   console.log(res.messages)
+      //   for (let message of messages){
+      //     if(message.content_type === "image") {
+      //       Storage.get(message.content).then((url) => {
+      //         message.content = url;
+      //         setMessages([...messages]);
+      //       })
+      //     }
+      //   }
+      //   setMessages(res.messages);
+      // })
+      // .catch((error) => {
+      //   // console.log(error)
+      //   alert(error)
+      // })
 
     onSetProcessing(false);
 
   }, [chat])
 
 
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  }
+
 
   const handleSend = async () => {
     onSetProcessing(true);
 
-    // Implement sending the message here
-    // const apiURL = import.meta.env.VITE_API_URL
-    
-    if (input.trim() != "") {
-    try{
-    // const result = await axios.post(apiURL+`/chats/${chat.id}/messages`, {content:input})
-    
-    const result = await API.post("api", `/chats/${chat.id}/messages`,  
-    {
-       body: {content: input} ,
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession()).getAccessToken().getJwtToken()}`,
-      },
-    });
+    if (file){
+      try {
+        const s3Options = {
+          contentType: file.type,
+          progressCallback(progress) {
+            console.log(`Uploaded: ${progress.loaded/progress.total}`);
+          },
+        }
+        // await Storage.put("arandomthing2", file, s3Options);
+        const uniqueFileName = `${Date.now()}-${file.name}`;
+        await Storage.put(uniqueFileName, file, s3Options);
+        console.log('File uploaded successfully!');
+
+        const result = await API.post(
+          "api", 
+          "/chats/" + chat.id + "/messages",  
+          {
+            body: {
+              content: uniqueFileName,
+              content_type: "image"
+            } ,
+          }
+        );
+
+        console.log(result)
+
+      } catch (error) {
+        console.log('Error uploading file:', error);
+      }
+      setFile(null)
+      }else{
+        const result = await API.post(
+          "api", 
+          "/chats/" + chat.id + "/messages",  
+          {
+            body: {
+              content: input,
+              content_type: "text"
+            } ,
+          }
+        );
+        console.log("result!!!!!!", result)
+      }
 
 
-    console.log(result)
-    const newMessage = result.message
-    setMessages([...messages, newMessage]);  
-    }catch(error){
-      alert(error)
-      console.log(error);
-    }
-  }
+      getMessages();
+
     setInput('');
     onSetProcessing(false);
 
@@ -78,11 +140,11 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
           await API.put("api", `/chats/${chat.id}/messages/`+ id,
           {
             body: {content: content},
-            headers: {
-              Authorization: `Bearer ${(await Auth.currentSession())
-                .getAccessToken()
-                .getJwtToken()}`,
-            },
+            // headers: {
+            //   Authorization: `Bearer ${(await Auth.currentSession())
+            //     .getAccessToken()
+            //     .getJwtToken()}`,
+            // },
 
           }
           );
@@ -111,15 +173,20 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
 
     // const apiURL = import.meta.env.VITE_API_URL
     // await axios.delete(apiURL+`/chats/${chat.id}/messages/`+ id)
+    // const message = messages.find(message => message.id === id);
+
+    // await Storage.remove( message.key);
+    await Storage.remove(messages.find(message => message.id === id)?.key);
+
 
 
     await API.del("api", `/chats/${chat.id}/messages/` + id,  
     {
-      headers: {
-        Authorization: `Bearer ${(await Auth.currentSession())
-          .getAccessToken()
-          .getJwtToken()}`,
-      },
+      // headers: {
+      //   Authorization: `Bearer ${(await Auth.currentSession())
+      //     .getAccessToken()
+      //     .getJwtToken()}`,
+      // },
     }
   );
     
@@ -142,6 +209,7 @@ const ChatWindow = ({chat, onProcessing, onSetProcessing }) => {
       </div>
       {onProcessing ? "" :
       <div className="flex mt-4">
+        <input type="file" onChange={handleFileChange} />
         <input
           type="text"
           value={input}
